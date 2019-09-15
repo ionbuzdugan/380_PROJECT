@@ -15,6 +15,10 @@
 
 int main(void)
 {
-
-	for(;;);
+  HAL_Init();
+  BSP_LED_Init(LED2);
+  while(1){
+    BSP_LED_Toggle(LED2);
+    HAL_Delay(1000);
+  }
 }
