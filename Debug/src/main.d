@@ -1,4 +1,8 @@
-src/main.o: ../src/main.c \
+src/main.o: ../src/main.c ../src/main.h \
+ /home/ion/workspace/380_PROJECT/HAL_Driver/Inc/stm32f4xx_hal.h \
+ /home/ion/workspace/380_PROJECT/HAL_Driver/Inc/stm32f4xx_hal_conf.h \
+ /home/ion/workspace/380_PROJECT/HAL_Driver/Inc/stm32f4xx_hal_rcc.h \
+ /home/ion/workspace/380_PROJECT/HAL_Driver/Inc/stm32f4xx_hal_def.h \
  /home/ion/workspace/380_PROJECT/CMSIS/device/stm32f4xx.h \
  /home/ion/workspace/380_PROJECT/CMSIS/device/stm32f401xe.h \
  /home/ion/workspace/380_PROJECT/CMSIS/core/core_cm4.h \
@@ -7,10 +11,6 @@ src/main.o: ../src/main.c \
  /home/ion/workspace/380_PROJECT/CMSIS/core/cmsis_gcc.h \
  /home/ion/workspace/380_PROJECT/CMSIS/core/mpu_armv7.h \
  /home/ion/workspace/380_PROJECT/CMSIS/device/system_stm32f4xx.h \
- /home/ion/workspace/380_PROJECT/HAL_Driver/Inc/stm32f4xx_hal.h \
- /home/ion/workspace/380_PROJECT/HAL_Driver/Inc/stm32f4xx_hal_conf.h \
- /home/ion/workspace/380_PROJECT/HAL_Driver/Inc/stm32f4xx_hal_rcc.h \
- /home/ion/workspace/380_PROJECT/HAL_Driver/Inc/stm32f4xx_hal_def.h \
  /home/ion/workspace/380_PROJECT/HAL_Driver/Inc/Legacy/stm32_hal_legacy.h \
  /home/ion/workspace/380_PROJECT/HAL_Driver/Inc/stm32f4xx_hal_rcc_ex.h \
  /home/ion/workspace/380_PROJECT/HAL_Driver/Inc/stm32f4xx_hal_exti.h \
@@ -59,7 +59,20 @@ src/main.o: ../src/main.c \
  /home/ion/workspace/380_PROJECT/HAL_Driver/Inc/stm32f4xx_ll_usb.h \
  /home/ion/workspace/380_PROJECT/HAL_Driver/Inc/stm32f4xx_hal_pcd_ex.h \
  /home/ion/workspace/380_PROJECT/HAL_Driver/Inc/stm32f4xx_hal_hcd.h \
- /home/ion/workspace/380_PROJECT/Utilities/STM32F4xx-Nucleo/stm32f4xx_nucleo.h
+ /home/ion/workspace/380_PROJECT/Utilities/STM32F4xx-Nucleo/stm32f4xx_nucleo.h \
+ /home/ion/workspace/380_PROJECT/HAL_Driver/Inc/stm32f4xx_hal_usart.h \
+ /home/ion/workspace/380_PROJECT/HAL_Driver/Inc/stm32f4xx_hal_gpio.h \
+ /home/ion/workspace/380_PROJECT/HAL_Driver/Inc/stm32f4xx_hal_def.h
+
+../src/main.h:
+
+/home/ion/workspace/380_PROJECT/HAL_Driver/Inc/stm32f4xx_hal.h:
+
+/home/ion/workspace/380_PROJECT/HAL_Driver/Inc/stm32f4xx_hal_conf.h:
+
+/home/ion/workspace/380_PROJECT/HAL_Driver/Inc/stm32f4xx_hal_rcc.h:
+
+/home/ion/workspace/380_PROJECT/HAL_Driver/Inc/stm32f4xx_hal_def.h:
 
 /home/ion/workspace/380_PROJECT/CMSIS/device/stm32f4xx.h:
 
@@ -76,14 +89,6 @@ src/main.o: ../src/main.c \
 /home/ion/workspace/380_PROJECT/CMSIS/core/mpu_armv7.h:
 
 /home/ion/workspace/380_PROJECT/CMSIS/device/system_stm32f4xx.h:
-
-/home/ion/workspace/380_PROJECT/HAL_Driver/Inc/stm32f4xx_hal.h:
-
-/home/ion/workspace/380_PROJECT/HAL_Driver/Inc/stm32f4xx_hal_conf.h:
-
-/home/ion/workspace/380_PROJECT/HAL_Driver/Inc/stm32f4xx_hal_rcc.h:
-
-/home/ion/workspace/380_PROJECT/HAL_Driver/Inc/stm32f4xx_hal_def.h:
 
 /home/ion/workspace/380_PROJECT/HAL_Driver/Inc/Legacy/stm32_hal_legacy.h:
 
@@ -182,3 +187,9 @@ src/main.o: ../src/main.c \
 /home/ion/workspace/380_PROJECT/HAL_Driver/Inc/stm32f4xx_hal_hcd.h:
 
 /home/ion/workspace/380_PROJECT/Utilities/STM32F4xx-Nucleo/stm32f4xx_nucleo.h:
+
+/home/ion/workspace/380_PROJECT/HAL_Driver/Inc/stm32f4xx_hal_usart.h:
+
+/home/ion/workspace/380_PROJECT/HAL_Driver/Inc/stm32f4xx_hal_gpio.h:
+
+/home/ion/workspace/380_PROJECT/HAL_Driver/Inc/stm32f4xx_hal_def.h:
