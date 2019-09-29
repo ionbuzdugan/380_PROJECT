@@ -48,10 +48,6 @@
   *         level initialization (GPIOs, clock, DMA, interrupt).
   * @retval None
   */
-void HAL_MspInit(void)
-{
-
-}
 
 /**
   * @brief  DeInitializes the Global MSP.

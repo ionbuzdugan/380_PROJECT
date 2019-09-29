@@ -89,6 +89,7 @@
 "HAL_Driver/Src/stm32f4xx_ll_utils.o"
 "Utilities/STM32F4xx-Nucleo/stm32f4xx_nucleo.o"
 "src/main.o"
+"src/stm32f4xx_hal_msp.o"
 "src/stm32f4xx_it.o"
 "src/syscalls.o"
 "src/system_stm32f4xx.o"
