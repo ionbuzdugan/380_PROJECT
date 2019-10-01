@@ -27,6 +27,7 @@
 #include "stm32f4xx_hal_def.h"
 #include "stm32f4xx_hal.h"
 #include <string.h>
+#include "structures.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -50,7 +51,48 @@
 
 /* Private variables ---------------------------------------------------------*/
 UART_HandleTypeDef huart2;
+GPIO_TypeDef PIN_GPIO[12] = {
+                              GPIOA,
+                              GPIOB,
+                              GPIOB,
+                              GPIOB,
+                              GPIOB,
+                              GPIOA,
+                              GPIOA,
+                              GPIOC,
+                              GPIOB,
+                              GPIOA,
+                              GPIOA,
+                              GPIOA
+};
 
+uint16_t PIN_NUM[12] = {
+                    GPIO_PIN_10,
+                    GPIO_PIN_3,
+                    GPIO_PIN_5,
+                    GPIO_PIN_4,
+                    GPIO_PIN_10,
+                    GPIO_PIN_8,
+                    GPIO_PIN_9,
+                    GPIO_PIN_7,
+                    GPIO_PIN_6,
+                    GPIO_PIN_7,
+                    GPIO_PIN_6,
+                    GPIO_PIN_5
+};
+
+int PIN_MOTORS[6][4] =  {
+                          {0,1,2,3},
+                          {4,5,6,7},
+                          {8,9,10,11},
+                          {1,0,3,2},
+                          {5,4,7,6},
+                          {9,8,11,10}
+};
+
+int i = 0;
+int j = 0;
+int speeds[6] = {0,0,0,0,0,0};
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -65,6 +107,95 @@ static void MX_USART2_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void SendString (char *msg){
+  while(HAL_UART_Transmit(&huart2,(uint8_t*)msg,strlen(msg),1000) != HAL_OK)
+  {}
+}
+
+void Connect_Serial(void){
+  uint8_t *flagByte = malloc(sizeof(*flagByte));
+  do{
+    HAL_UART_Receive(&huart2,flagByte,sizeof(*flagByte),1000);
+  }while(*flagByte != LSB_CONNECT);
+  free(flagByte);
+}
+
+uint8_t Listen_For_Command(void){
+  uint8_t *flagByte = malloc(sizeof(*flagByte));
+  do{
+    HAL_UART_Receive(&huart2,flagByte,sizeof(*flagByte),1000);
+  }while(*flagByte != LSB_MOTOR);
+  uint8_t ret = *flagByte;
+  free(flagByte);
+  return ret;
+}
+
+void Run_Motor(int motorNum){
+  for(i = 0; i<4; i++){
+    for(j=0; j<4; j++){
+      if(j==i){
+        HAL_GPIO_WritePin(&PIN_GPIO[PIN_MOTORS[motorNum][j]],PIN_NUM[PIN_MOTORS[motorNum][j]],1);
+      }
+      else{
+        HAL_GPIO_WritePin(&PIN_GPIO[PIN_MOTORS[motorNum][j]],PIN_NUM[PIN_MOTORS[motorNum][j]],0);
+      }
+    }
+    HAL_Delay(MOTOR_DELAY);
+  }
+}
+
+void Run_Motor_Rev(int motorNum){
+  for(i = 0; i<4; i++){
+    for(j=3; j>=0; j--){
+      if(j==i){
+        HAL_GPIO_WritePin(&PIN_GPIO[PIN_MOTORS[motorNum][j]],PIN_NUM[PIN_MOTORS[motorNum][j]],1);
+      }
+      else{
+        HAL_GPIO_WritePin(&PIN_GPIO[PIN_MOTORS[motorNum][j]],PIN_NUM[PIN_MOTORS[motorNum][j]],0);
+      }
+    }
+    HAL_Delay(MOTOR_DELAY);
+  }
+}
+
+void Spin_Motors (int speeds[6]){
+  // Loop only for max cycles
+  for (i = 0; i<MAX_CYCLES_PER_STEP; i++){
+    // Run each motor every cycle
+    for (j = 0; j<6; j++){
+      if (speeds[i] != 0 && (i+1)%abs(speeds[i]) == 0){
+        if (speeds[i] > 0){
+          Run_Motor(i);
+        }
+        else{
+          Run_Motor_Rev(i);
+        }
+      }
+    }
+  }
+}
+
+uint8_t MotorMsgParse (MotorCmdFrame *motorCmd){
+  motorCmd->new = false;
+  // Convert speeds to cycles/step
+  // 0 means no speed
+  // 1-100 == 1-20 (same in negatives)
+  for (i = 0; i<6; i++){
+    speeds[i] = 0;
+  }
+  // Iterate through motors
+  for (i = 0; i<6; i++){
+    // Get motor value for each motor (-20 -> 20 scale)
+    if (motorCmd->payload[i] == 0){
+      speeds[i] = 0;
+    }
+    else{
+      speeds[i] = (MAX_MOTOR_CMD-1)*(1-(abs(motorCmd->payload[i])-1)/(MAX_CYCLES_PER_STEP-1)) + 1;
+      speeds[i] = speeds[i] * abs(motorCmd->payload[i]) / motorCmd->payload[i]; //preserve sign
+    }
+  }
+  Spin_Motors(speeds);
+}
 
 /* USER CODE END 0 */
 
@@ -99,24 +230,28 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-
+  // Variables
+  MotorCmdFrame *motorCmd = malloc(sizeof(*motorCmd));
+  motorCmd->new = false;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   BSP_LED_Init(LED2);
   BSP_LED_Off(LED2);
-  char *msg = "TEST\n";
+  UART_HandleTypeDef *retStat;
+  Connect_Serial();
+  uint8_t msgId;
   while (1)
   {
-    if (HAL_UART_Transmit(&huart2,(uint8_t*)msg,strlen(msg),1000) == HAL_OK){
-		  BSP_LED_On(LED2);
-		  HAL_Delay(500);
-		}
-	  else{
-		  BSP_LED_Off(LED2);
-      HAL_Delay(500);
-	  }
+    msgId = Listen_For_Command();
+    // Get and process command
+    if (msgId == LSB_MOTOR){
+      do{
+        HAL_UART_Receive(&huart2,motorCmd,sizeof(*motorCmd),1000);
+      }while(motorCmd->new == false);
+      MotorMsgParse(motorCmd);
+    }
   }
   /* USER CODE END 3 */
 }
@@ -157,6 +292,10 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+
+  __GPIOA_CLK_ENABLE();
+  __GPIOB_CLK_ENABLE();
+  __GPIOC_CLK_ENABLE();
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
   {
@@ -233,6 +372,26 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   GPIO_InitStruct.Alternate = GPIO_AF7_USART2;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  //Init motor pins
+  // GPIO A
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  GPIO_InitStruct.Pin = GPIO_PIN_10 | GPIO_PIN_9 | GPIO_PIN_8 | GPIO_PIN_7 | GPIO_PIN_6 | GPIO_PIN_5;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  // GPIO B
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  GPIO_InitStruct.Pin = GPIO_PIN_3 | GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_10;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  // GPIO C
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  GPIO_InitStruct.Pin = GPIO_PIN_7;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 }
 
