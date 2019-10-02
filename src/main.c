@@ -51,7 +51,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 UART_HandleTypeDef huart2;
-GPIO_TypeDef PIN_GPIO[12] = {
+GPIO_TypeDef *PIN_GPIO[12] = {
                               GPIOA,
                               GPIOB,
                               GPIOB,
@@ -118,6 +118,9 @@ void Connect_Serial(void){
     HAL_UART_Receive(&huart2,flagByte,sizeof(*flagByte),1000);
   }while(*flagByte != LSB_CONNECT);
   free(flagByte);
+  SendString("ACK");
+  SendString("ACK");
+  SendString("ACK");
 }
 
 uint8_t Listen_For_Command(void){
@@ -134,10 +137,10 @@ void Run_Motor(int motorNum){
   for(i = 0; i<4; i++){
     for(j=0; j<4; j++){
       if(j==i){
-        HAL_GPIO_WritePin(&PIN_GPIO[PIN_MOTORS[motorNum][j]],PIN_NUM[PIN_MOTORS[motorNum][j]],1);
+        HAL_GPIO_WritePin(PIN_GPIO[PIN_MOTORS[motorNum][j]],PIN_NUM[PIN_MOTORS[motorNum][j]],1);
       }
       else{
-        HAL_GPIO_WritePin(&PIN_GPIO[PIN_MOTORS[motorNum][j]],PIN_NUM[PIN_MOTORS[motorNum][j]],0);
+        HAL_GPIO_WritePin(PIN_GPIO[PIN_MOTORS[motorNum][j]],PIN_NUM[PIN_MOTORS[motorNum][j]],0);
       }
     }
     HAL_Delay(MOTOR_DELAY);
@@ -148,27 +151,27 @@ void Run_Motor_Rev(int motorNum){
   for(i = 0; i<4; i++){
     for(j=3; j>=0; j--){
       if(j==i){
-        HAL_GPIO_WritePin(&PIN_GPIO[PIN_MOTORS[motorNum][j]],PIN_NUM[PIN_MOTORS[motorNum][j]],1);
+        HAL_GPIO_WritePin(PIN_GPIO[PIN_MOTORS[motorNum][j]],PIN_NUM[PIN_MOTORS[motorNum][j]],1);
       }
       else{
-        HAL_GPIO_WritePin(&PIN_GPIO[PIN_MOTORS[motorNum][j]],PIN_NUM[PIN_MOTORS[motorNum][j]],0);
+        HAL_GPIO_WritePin(PIN_GPIO[PIN_MOTORS[motorNum][j]],PIN_NUM[PIN_MOTORS[motorNum][j]],0);
       }
     }
     HAL_Delay(MOTOR_DELAY);
   }
 }
 
-void Spin_Motors (int speeds[6]){
+void Spin_Motors (void){
   // Loop only for max cycles
   for (i = 0; i<MAX_CYCLES_PER_STEP; i++){
     // Run each motor every cycle
     for (j = 0; j<6; j++){
-      if (speeds[i] != 0 && (i+1)%abs(speeds[i]) == 0){
-        if (speeds[i] > 0){
-          Run_Motor(i);
+      if (speeds[j] != 0 && (i+1)%abs(speeds[j]) == 0){
+        if (speeds[j] > 0){
+          Run_Motor(j);
         }
         else{
-          Run_Motor_Rev(i);
+          Run_Motor_Rev(j);
         }
       }
     }
@@ -190,11 +193,11 @@ uint8_t MotorMsgParse (MotorCmdFrame *motorCmd){
       speeds[i] = 0;
     }
     else{
-      speeds[i] = (MAX_MOTOR_CMD-1)*(1-(abs(motorCmd->payload[i])-1)/(MAX_CYCLES_PER_STEP-1)) + 1;
+      speeds[i] = (MAX_CYCLES_PER_STEP-1)*(1-(abs(motorCmd->payload[i])-1)/(MAX_MOTOR_CMD-1)) + 1;
       speeds[i] = speeds[i] * abs(motorCmd->payload[i]) / motorCmd->payload[i]; //preserve sign
     }
   }
-  Spin_Motors(speeds);
+  Spin_Motors();
 }
 
 /* USER CODE END 0 */
@@ -386,13 +389,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   GPIO_InitStruct.Pin = GPIO_PIN_3 | GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_10;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
   // GPIO C
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   GPIO_InitStruct.Pin = GPIO_PIN_7;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 }
 
 /* USER CODE BEGIN 4 */

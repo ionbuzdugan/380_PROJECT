@@ -14,5 +14,5 @@
 
 typedef struct{
     int8_t payload[6];
-    int new;
+    uint8_t new;
 }MotorCmdFrame;
