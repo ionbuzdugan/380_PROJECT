@@ -1,6 +1,7 @@
 import serial as serial
 import time 
 from ctypes import *
+import pdb
 
 LSB_CONNECT = b'\xB9'
 LSB_MOTOR = b'\xA8'
@@ -13,7 +14,7 @@ s = serial.Serial(
     bytesize=serial.EIGHTBITS
 )
 
-def MotorCmd(m1,m2,m3,m4,m5,m6):
+def MotorCmd(m1=0,m2=0,m3=0,m4=0,m5=0,m6=0):
     s.write(LSB_MOTOR)
     time.sleep(0.001)
     s.write(c_int8(m1))
@@ -33,5 +34,6 @@ if __name__ == "__main__":
         r = str(s.read(3))
     print ("CONNECTED\n")
 
+    pdb.set_trace()
     while(1):
         MotorCmd(50,0,0,0,0,0)

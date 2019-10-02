@@ -90,8 +90,6 @@ int PIN_MOTORS[6][4] =  {
                           {9,8,11,10}
 };
 
-int i = 0;
-int j = 0;
 int speeds[6] = {0,0,0,0,0,0};
 /* USER CODE BEGIN PV */
 
@@ -107,6 +105,14 @@ static void MX_USART2_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void MotorCmd_Init(MotorCmdFrame *m){
+  int i;
+  for(i=0;i<6;i++){
+    m->payload[i] = 0;
+  }
+  m->new = false;
+}
+
 void SendString (char *msg){
   while(HAL_UART_Transmit(&huart2,(uint8_t*)msg,strlen(msg),1000) != HAL_OK)
   {}
@@ -123,17 +129,24 @@ void Connect_Serial(void){
   SendString("ACK");
 }
 
-uint8_t Listen_For_Command(void){
+uint8_t Listen_For_Command(int timeout){
   uint8_t *flagByte = malloc(sizeof(*flagByte));
-  do{
-    HAL_UART_Receive(&huart2,flagByte,sizeof(*flagByte),1000);
-  }while(*flagByte != LSB_MOTOR);
+  HAL_UART_Receive(&huart2,flagByte,sizeof(*flagByte),timeout);
   uint8_t ret = *flagByte;
   free(flagByte);
   return ret;
 }
 
+void Stop_Motor (int motorNum){
+  int i;
+  for(i = 0; i<4; i++){
+    HAL_GPIO_WritePin(PIN_GPIO[PIN_MOTORS[motorNum][i]],PIN_NUM[PIN_MOTORS[motorNum][i]],0);
+  }
+}
+
 void Run_Motor(int motorNum){
+  int i;
+  int j;
   for(i = 0; i<4; i++){
     for(j=0; j<4; j++){
       if(j==i){
@@ -148,8 +161,10 @@ void Run_Motor(int motorNum){
 }
 
 void Run_Motor_Rev(int motorNum){
-  for(i = 0; i<4; i++){
-    for(j=3; j>=0; j--){
+  int i;
+  int j;
+  for(i = 3; i>=0; i--){
+    for(j=0; j<4; j++){
       if(j==i){
         HAL_GPIO_WritePin(PIN_GPIO[PIN_MOTORS[motorNum][j]],PIN_NUM[PIN_MOTORS[motorNum][j]],1);
       }
@@ -162,16 +177,23 @@ void Run_Motor_Rev(int motorNum){
 }
 
 void Spin_Motors (void){
+  int i;
+  int j;
   // Loop only for max cycles
   for (i = 0; i<MAX_CYCLES_PER_STEP; i++){
     // Run each motor every cycle
     for (j = 0; j<6; j++){
-      if (speeds[j] != 0 && (i+1)%abs(speeds[j]) == 0){
-        if (speeds[j] > 0){
-          Run_Motor(j);
-        }
-        else{
-          Run_Motor_Rev(j);
+      if (speeds[j] == 0){
+          Stop_Motor(j);
+      }
+      else{
+        if ((i+1)%abs(speeds[j]) == 0){
+          if (speeds[j] > 0){
+            Run_Motor(j);
+          }
+          else{
+            Run_Motor_Rev(j);
+          }
         }
       }
     }
@@ -179,6 +201,7 @@ void Spin_Motors (void){
 }
 
 uint8_t MotorMsgParse (MotorCmdFrame *motorCmd){
+  int i;
   motorCmd->new = false;
   // Convert speeds to cycles/step
   // 0 means no speed
@@ -235,7 +258,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   // Variables
   MotorCmdFrame *motorCmd = malloc(sizeof(*motorCmd));
-  motorCmd->new = false;
+  MotorCmd_Init(motorCmd);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -247,14 +270,15 @@ int main(void)
   uint8_t msgId;
   while (1)
   {
-    msgId = Listen_For_Command();
+    msgId = Listen_For_Command(1);
     // Get and process command
     if (msgId == LSB_MOTOR){
-      do{
-        HAL_UART_Receive(&huart2,motorCmd,sizeof(*motorCmd),1000);
-      }while(motorCmd->new == false);
-      MotorMsgParse(motorCmd);
+//      do{
+        HAL_UART_Receive(&huart2,motorCmd,sizeof(*motorCmd),1);
+//      }while(motorCmd->new == false);
     }
+    MotorMsgParse(motorCmd);
+    msgId = 0x00;
   }
   /* USER CODE END 3 */
 }
