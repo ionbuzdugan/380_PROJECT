@@ -1,2 +1,18 @@
-/Debug/
-/Release/
+#Ignore all
+*
+#DONT IGNORE:
+!/Debug/
+!/Drivers/
+!/Inc/
+!/Src/
+!/startup/
+!/.git/
+!/.settings/
+!380_PROJECT.ioc
+!380_PROJECT.xml
+!380_PROJECTDebug.cfg
+!STM32F401RETx_FLASH.ld
+!.cproject
+!.gitignore
+!.mxproject
+!.project

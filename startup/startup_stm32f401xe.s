@@ -2,7 +2,7 @@
   ******************************************************************************
   * @file      startup_stm32f401xe.s
   * @author    MCD Application Team
-  * @brief     STM32F401xExx Devices vector table for GCC toolchain. 
+  * @brief     STM32F401xExx Devices vector table for GCC based toolchains. 
   *            This module performs:
   *                - Set the initial SP
   *                - Set the initial PC == Reset_Handler,
