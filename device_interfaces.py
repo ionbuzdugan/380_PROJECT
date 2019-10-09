@@ -18,8 +18,8 @@ class ServoInterface(BaseComponent):
         self.servo_directions = kwargs.pop('servo_directions')
         self.servo_indices = kwargs.pop('servo_indices')
         self.zero_positions = kwargs.pop('zero_positions')
-        # self.serial = serial.Serial(**kwargs)
-        # self.connect(timeout)
+        self.serial = serial.Serial(**kwargs)
+        self.connect(timeout)
 
     def connect(self, timeout):
         t0 = time.time()
@@ -41,7 +41,6 @@ class ServoInterface(BaseComponent):
 
     def send_command(self, angles):
         angles = self.format_angles(angles)
-        return
         self.serial.write(LSB_MOTOR)
         for i in range(6):
             self.serial.write(c_int8(angles[i]))
@@ -49,12 +48,10 @@ class ServoInterface(BaseComponent):
 
     def format_angles(self, angles):
         formatted_angles = [0]*6
-        print(angles)
         for con_i, ser_i in enumerate(self.servo_indices):
             formatted_angles[ser_i] = int(round(180*(self.servo_directions[con_i] < 0)
                                                 + self.servo_directions[con_i]*angles[con_i]*180/np.pi
                                                 - self.servo_directions[con_i]*self.zero_positions[con_i]))
-        print(formatted_angles)
         return formatted_angles
 
 

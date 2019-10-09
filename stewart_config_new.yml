@@ -26,7 +26,7 @@ components:
       - servo_interface
     rod_length: 18  # cm
     crank_length: 1.5  # cm
-    servo_range: [0, 90]  # degrees
+    servo_range: [-70, 70]  # degrees
     actuators:
       - base_joint: [7.179, -2.25, 0]  # position of base joint relative to base origin
         platform_joint: [4.149519052838327, -5.687177826491075, 0.0]  # position of platform joint relative to platform origin
