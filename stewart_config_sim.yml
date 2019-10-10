@@ -13,26 +13,27 @@ components:
     width: 640
     height: 800
     mode: angle
-    title: "Servo Angle"
-    xlabel: "Time (s)"
-    ylabel: "Servo Angle (deg)"
+    title: Servo Angle
+    xlabel: Time (s)
+    ylabel: Servo Angle (deg)
     keep_time: 5  # s
   - name: keyboard_interface
     class: keyboard_device_interface
     consumers:
       - kinematics_controller
-    roll_rate: 45  # degrees/s
-    pitch_rate: 45  # degrees/s
-    yaw_rate: 10  # degrees/s
-    x_rate: 1  # cm/s
-    y_rate: 1  # cm/s
+    roll_rate: 20  # degrees/s
+    pitch_rate: 20  # degrees/s
+    yaw_rate: 20  # degrees/s
+    x_rate: 0  # cm/s
+    y_rate: 0  # cm/s
     z_rate: 0  # cm/s
   - name: servo_interface
     class: servo_device_interface
-    port: "/dev/ttyACM0"
-    baudrate: 115200
-    parity: "N"
-    stopbits: 1
+    startup_delay: 3
+    port: /dev/cu.usbmodem14101
+    baudrate: 9600
+    parity: N
+    stopbits: 2
     bytesize: 8
     servo_indices: [0, 5, 4, 3, 2, 1]
     servo_directions: [1, -1, 1, -1, 1, -1]

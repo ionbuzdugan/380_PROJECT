@@ -56,38 +56,14 @@ class Orchestrator(BaseComponent):
             'type': 'update'
         })
         self.gui.update()
-        self.pause()
-
-    def pause(self):
         time.sleep(self.loop_delay)
 
     def run(self):
-        # i = 0
-        # t0 = time.time()
-        self.publish({
-            'sender': self.name,
-            'type': 'zero'
-        })
         while True:
             self.update()
-            # i += 1
-            # print('{} it/s\r'.format(i/(time.time()-t0)))
-
-    # def run(self):
-    #     try:
-    #         self.loop.create_task(self.task())
-    #         asyncio.run(self.publish({
-    #             'sender': self.name,
-    #             'type': 'start'
-    #         }))
-    #         self.loop.run_forever()
-    #     except KeyboardInterrupt:
-    #         pass
-    #     finally:
-    #         self.loop.close()
 
 
 if __name__ == '__main__':
-    conf = 'stewart_config_sim.yml'
+    conf = 'stewart_config_new.yml'
     app = Orchestrator(conf)
     app.run()

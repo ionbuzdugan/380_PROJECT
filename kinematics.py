@@ -144,8 +144,6 @@ class KinematicsController(BaseComponent):
             # Check angle validity
             servo_angles.append(np.arcsin((H[i][2] - Bi[2])/self.crank_length))
             if np.isnan(servo_angles[i]) or not (self.servo_range[0] < servo_angles[i] < self.servo_range[1]):
-                print(servo_angles[i], self.servo_range)
-                print('broke')
                 return
 
         self.servo_angles = servo_angles
