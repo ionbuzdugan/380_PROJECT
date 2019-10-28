@@ -61,7 +61,6 @@ class KeyboardInterface(BaseComponent):
         self.yaw_rate = kwargs['yaw_rate']*np.pi/180
 
         self.prev_time = 0
-        self.ready = False
         self.bind_handlers()
 
     def update(self, msg):
