@@ -5,7 +5,7 @@ from ctypes import *
 
 from base import BaseComponent
 
-LSB_MOTOR = c_int8(0)
+LSB_MOTOR = c_uint8(0)
 
 
 class ServoInterface(BaseComponent):
@@ -25,12 +25,24 @@ class ServoInterface(BaseComponent):
             self.send_command(angles)
 
     def send_command(self, angles):
+        # print([a*180/np.pi for a in angles])
         angles = self.format_angles(angles)
-        self.serial.write(LSB_MOTOR)
-        print('\nSending...')
+        angles_bytes = bytearray([0] + angles)
+        self.serial.write(angles_bytes)
         for i in range(6):
-            self.serial.write(c_uint8(angles[i]))
             print('Sent: ', angles[i], ' Received: ', str(self.serial.readline()))
+
+    # def send_command(self, angles):
+    #     print([a*180/np.pi for a in angles])
+    #     angles = self.format_angles(angles)
+    #     # angles = bytearray(angles)
+    #     print('\nSending...')
+    #     # print(angles)
+    #     self.serial.write(LSB_MOTOR)
+    #     for i in range(6):
+    #         self.serial.write(c_uint8(angles[i]))
+    #     for i in range(6):
+    #         print('Sent: ', angles[i], ' Received: ', str(self.serial.readline()))
 
     def format_angles(self, angles):
         formatted_angles = [0]*6

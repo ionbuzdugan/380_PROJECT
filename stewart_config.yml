@@ -1,39 +1,32 @@
-loop_delay: 0.01
+loop_delay: 0.02
 components:
-  - name: simulation_frame
-    class: simulation_frame
-    grid_params: {"row": 0, "column": 0}
-    width: 640
-    height: 800
-    bbox_limits: [[-8, 8], [-8, 8], [-1, 20]]
-    pad: [40, 40, 140, 140]  # top bottom left right
-  - name: servo_angle_frame
-    class: graph_frame
-    grid_params: {"row": 0, "column": 1}
-    width: 640
-    height: 800
-    mode: angle
-    title: Servo Angle
-    xlabel: Time (s)
-    ylabel: Servo Angle (deg)
-    keep_time: 5  # s
   - name: keyboard_interface
     class: keyboard_device_interface
     consumers:
       - kinematics_controller
-    roll_rate: 20  # degrees/s
-    pitch_rate: 20  # degrees/s
-    yaw_rate: 20  # degrees/s
-    x_rate: 0  # cm/s
-    y_rate: 0  # cm/s
+    roll_rate: 10  # degrees/s
+    pitch_rate: 10  # degrees/s
+    yaw_rate: 10  # degrees/s
+    x_rate: 1  # cm/s
+    y_rate: 1  # cm/s
     z_rate: 0  # cm/s
+  - name: servo_interface
+    class: servo_device_interface
+    startup_delay: 2
+    port: /dev/cu.usbmodem14101
+    baudrate: 9600
+    parity: N
+    stopbits: 1
+    bytesize: 8
+    servo_indices: [0, 5, 4, 3, 2, 1]
+    servo_directions: [1, -1, 1, -1, 1, -1]
+    zero_positions: [-90, -90, -90, -90, -90, -90]
   - name: kinematics_controller
     class: kinematics_controller
     consumers:
-      - simulation_frame
-      - servo_angle_frame
+      - servo_interface
     rod_length: 18  # cm
-    crank_length: 1.5  # cm
+    crank_length: 3  # cm
     servo_range: [-70, 70]  # degrees
     actuators:
       - base_joint: [11, -5.95, 0]  # position of base joint relative to base origin
