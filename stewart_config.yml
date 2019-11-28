@@ -4,15 +4,15 @@ components:
     class: keyboard_device_interface
     consumers:
       - kinematics_controller
-    roll_rate: 10  # degrees/s
-    pitch_rate: 10  # degrees/s
-    yaw_rate: 10  # degrees/s
-    x_rate: 1  # cm/s
-    y_rate: 1  # cm/s
+    roll_rate: 20  # degrees/s
+    pitch_rate: 20  # degrees/s
+    yaw_rate: 0  # degrees/s
+    x_rate: 2  # cm/s
+    y_rate: 2  # cm/s
     z_rate: 0  # cm/s
   - name: servo_interface
     class: servo_device_interface
-    startup_delay: 2
+    startup_delay: 3
     port: /dev/cu.usbmodem14101
     baudrate: 9600
     parity: N
@@ -25,25 +25,25 @@ components:
     class: kinematics_controller
     consumers:
       - servo_interface
-    rod_length: 18  # cm
+    rod_length: 30.5  # cm
     crank_length: 3  # cm
-    servo_range: [-70, 70]  # degrees
+    servo_range: [-70, 70]  # degrees 11.98
     actuators:
-      - base_joint: [11, -5.95, 0]  # position of base joint relative to base origin
-        platform_joint: [7.735640646055096, -10.198522628062374, 0.0]  # position of platform joint relative to platform origin
+      - base_joint: [11.76, -5.99, 0]  # position of base joint relative to base origin
+        platform_joint: [7.252531754730542, -10.061753482699977, 0.0]  # position of platform joint relative to platform origin
         crank_angle: 1.5707963267948966  # angle between servo crank and base x-axis
-      - base_joint: [11, 5.95, 0]  # position of base joint relative to base origin
-        platform_joint: [7.735640646055103, 10.198522628062369, 0.0]  # position of platform joint relative to platform origin
+      - base_joint: [11.76, 5.99, 0]  # position of base joint relative to base origin
+        platform_joint: [7.2525317547305495, 10.061753482699972, 0.0]  # position of platform joint relative to platform origin
         crank_angle: -1.5707963267948966  # angle between servo crank and base x-axis
-      - base_joint: [-0.3471488474825879, 12.501279441628824, 0.0]  # position of base joint relative to base origin
-        platform_joint: [4.9643593539449, 11.79852262806237, 0.0]  # position of platform joint relative to platform origin
+      - base_joint: [-0.6925078313312092, 13.179458748504999, 0.0]  # position of base joint relative to base origin
+        platform_joint: [5.087468245269454, 11.311753482699972, 0.0]  # position of platform joint relative to platform origin
         crank_angle: 3.665191429188092  # angle between servo crank and base x-axis
-      - base_joint: [-10.652851152517407, 6.551279441628828, 0.0]  # position of base joint relative to base origin
-        platform_joint: [-12.7, 1.6000000000000059, 0.0]  # position of platform joint relative to platform origin
+      - base_joint: [-11.067492168668787, 7.189458748505001, 0.0]  # position of base joint relative to base origin
+        platform_joint: [-12.34, 1.25, 0.0]  # position of platform joint relative to platform origin
         crank_angle: 0.5235987755982987  # angle between servo crank and base x-axis
-      - base_joint: [-10.652851152517414, -6.551279441628821, 0.0]  # position of base joint relative to base origin
-        platform_joint: [-12.7, -1.599999999999996, 0.0]  # position of platform joint relative to platform origin
+      - base_joint: [-11.067492168668792, -7.189458748504993, 0.0]  # position of base joint relative to base origin
+        platform_joint: [-12.34, -1.25, 0.0]  # position of platform joint relative to platform origin
         crank_angle: 5.759586531581287  # angle between servo crank and base x-axis
-      - base_joint: [-0.347148847482595, -12.501279441628823, 0.0]  # position of base joint relative to base origin
-        platform_joint: [4.964359353944891, -11.798522628062376, 0.0]  # position of platform joint relative to platform origin
+      - base_joint: [-0.6925078313312172, -13.179458748504999, 0.0]  # position of base joint relative to base origin
+        platform_joint: [5.087468245269443, -11.311753482699975, 0.0]  # position of platform joint relative to platform origin
         crank_angle: 2.617993877991494  # angle between servo crank and base x-axis
