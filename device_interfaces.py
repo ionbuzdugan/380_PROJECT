@@ -3,6 +3,7 @@ import numpy as np
 import serial as serial
 import socket
 from ctypes import *
+from datetime import datetime as dtime
 
 from base import BaseComponent
 
@@ -25,26 +26,20 @@ class ServoInterface(BaseComponent):
             # TODO: convert float angles (rad) to correct int outputs
             self.send_command(angles)
 
-    def send_command(self, angles):
-        # print([a*180/np.pi for a in angles])
-        angles = self.format_angles(angles)
-        angles_bytes = bytearray([0] + angles)
-        self.serial.writelines(angles_bytes)
-        self.serial.flush()
-        for i in range(6):
-            print('Sent: ', angles[i], ' Received: ', str(self.serial.readline()))
-
     # def send_command(self, angles):
-    #     print([a*180/np.pi for a in angles])
     #     angles = self.format_angles(angles)
-    #     # angles = bytearray(angles)
-    #     print('\nSending...')
-    #     # print(angles)
-    #     self.serial.write(LSB_MOTOR)
-    #     for i in range(6):
-    #         self.serial.write(c_uint8(angles[i]))
+    #     angles_bytes = bytearray(angles)
+    #     self.serial.writelines(angles_bytes)
     #     for i in range(6):
     #         print('Sent: ', angles[i], ' Received: ', str(self.serial.readline()))
+
+    def send_command(self, angles):
+        # print('\nSending...')
+        angles = self.format_angles(angles)
+        for i in range(6):
+            self.serial.write(c_uint8(angles[i]))
+        # for i in range(6):
+        #     print('Sent: ', angles[i], ' Received: ', str(self.serial.readline()))
 
     def format_angles(self, angles):
         formatted_angles = [0]*6
@@ -150,12 +145,20 @@ class IMUInterface(BaseComponent):
         self.socket.bind((host, port))
         self.timeout = kwargs.get('timeout', 0.5)
         self.history = kwargs.get('history', 10)
-        self.min_resp = 2
+        self.file_prefix = kwargs.get('file_prefix', '')
+        self.min_resp = 0.5
         self.zero_pos = None
-        self.zero()
+        self.t0 = None
+
+        if self.file_prefix:
+            ts = dtime.strftime(dtime.now(), '%Y-%m-%d_%H.%M.%S.csv')
+            self.file = open(self.file_prefix + ts, 'w')
+            self.file.write('{Time,Roll,Pitch,Yaw\n')
 
     def update(self, msg):
         if msg['type'] == 'update':
+            if self.zero_pos is None:
+                self.zero()
             reading = self.get_reading()
             if reading is not None:
                 self.publish_reading(reading)
@@ -165,6 +168,7 @@ class IMUInterface(BaseComponent):
         while reading is None:
             reading = self.get_reading()
         self.zero_pos = reading
+        self.t0 = time.time()
 
     def get_reading(self):
         readings = []
@@ -174,21 +178,39 @@ class IMUInterface(BaseComponent):
             while time.time() - t0 < self.timeout:
                 message, address = self.socket.recvfrom(8192)
                 splt = message.decode('ascii').split(',')
-                if len(splt) == 13:
+                if len(splt) == 17:
                     reading = [float(n.strip()) for n in splt[-3:]]
                     break
             if reading is not None:
                 readings.append(reading)
-        return np.mean(readings, axis=0)
+        reading = np.mean(readings, axis=0)
+        reading = np.flip(reading)
+        return reading
 
     def publish_reading(self, reading):
-        reading = [(r - z)*np.pi/180. if (r - z > self.min_resp) else 0 for r, z in zip(reading, self.zero_pos)]
-        reading[-1] = 0
+        reading_out = []
+        for r, z in zip(reading, self.zero_pos):
+            if abs(r - z) > self.min_resp:
+                reading_out.append((r - z)*np.pi/180.)
+            else:
+                reading_out.append(0)
+
+        reading_out[-1] = 0
         msg = {
             'sender': self.name,
             'type': 'imu_reading',
             'data': {
-                'reading': reading,
+                'reading': reading_out,
             }
         }
         self.publish(msg)
+        reading_out = [r*180/np.pi for r in reading_out]
+        # print(reading_out[:2])
+        if self.file_prefix:
+            self.write(time.time() - self.t0, reading_out)
+
+    def write(self, time, reading):
+        self.file.write('{},{},{},{}'.format(time, reading[0], reading[1], reading[2]) + '\n')
+
+    def __del__(self):
+        self.file.close()

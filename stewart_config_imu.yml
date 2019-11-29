@@ -16,16 +16,18 @@ components:
     host: ''
     port: 5555
     timeout: 0.001
-    history: 5
+    history: 1
+    file_prefix: ''
     consumers:
       - kinematics_controller
   - name: kinematics_controller
     class: kinematics_controller
+    max_angle_imu: 15  # degrees
     consumers:
       - servo_interface
     rod_length: 30.5  # cm
     crank_length: 3  # cm
-    servo_range: [-70, 70]  # degrees 11.98
+    servo_range: [-70, 70]  # degrees
     actuators:
       - base_joint: [11.76, -5.99, 0]  # position of base joint relative to base origin
         platform_joint: [7.252531754730542, -10.061753482699977, 0.0]  # position of platform joint relative to platform origin
