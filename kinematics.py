@@ -34,7 +34,7 @@ class KinematicsController(BaseComponent):
         self.orientation = None  # current orientation
         self.B = []  # base joints in base frame
         self.P = []  # platform joints in platform frame
-        self.q = []  # vector from base origin to Pk
+        self.q = []  # vector from base origin to P
         self.l = []  # vector from B to P
         self.H = []  # servo horn end to mount the rod
         self.sin_beta = []  # sin of pan angle of servos in base plate
@@ -51,33 +51,27 @@ class KinematicsController(BaseComponent):
                                  - (self.P[0][0] - self.B[0][0])**2
                                  - (self.P[0][1] - self.B[0][1])**2)]
 
-        # TODO: wait for initial position to be close before initializing
         self.update_platform([0, 0, 0], [0, 0, 0])
 
     def update(self, msg):
-        if msg['type'] == 'position':
-            translation = msg['data']['translation']
-            orientation = msg['data']['orientation']
+        if msg['type'] in ('position', 'delta', 'imu_reading'):
+            if msg['type'] == 'position':
+                translation = msg['data']['translation']
+                orientation = msg['data']['orientation']
+            elif msg['type'] == 'delta':
+                translation = []
+                orientation = []
+                for i in range(3):
+                    translation.append(self.translation[i] + msg['data']['delta_translation'][i])
+                    orientation.append(self.orientation[i] + msg['data']['delta_orientation'][i])
+            elif msg['type'] == 'imu_reading':
+                roll, pitch = msg['data']['reading'][:2]
+                max_ang = 15*np.pi/180
+                orientation = [0, 0, 0]
+                orientation[0] = np.sign(roll)*min(np.abs(roll), max_ang)
+                orientation[1] = -np.sign(pitch)*min(np.abs(pitch), max_ang)
+                translation = self.translation
             self.update_platform(translation, orientation)
-            self.publish_servo()
-            self.publish_geometry()
-        elif msg['type'] == 'delta':
-            translation = []
-            orientation = []
-            for i in range(3):
-                translation.append(self.translation[i] + msg['data']['delta_translation'][i])
-                orientation.append(self.orientation[i] + msg['data']['delta_orientation'][i])
-            self.update_platform(translation, orientation)
-            self.publish_servo()
-            self.publish_geometry()
-        elif msg['type'] == 'imu_reading':
-            roll, pitch = msg['data']['reading'][:2]
-            max_ang = 15*np.pi/180
-            orientation = [0, 0, 0]
-            orientation[0] = np.sign(roll)*min(np.abs(roll), max_ang)
-            orientation[1] = -np.sign(pitch)*min(np.abs(pitch), max_ang)
-            # print(max_ang, roll, pitch, orientation)
-            self.update_platform(self.translation, orientation)
             self.publish_servo()
             self.publish_geometry()
 
@@ -162,6 +156,3 @@ class KinematicsController(BaseComponent):
         self.q = q
         self.l = l
         self.H = H
-
-    def backprop_angles(self):
-        pass

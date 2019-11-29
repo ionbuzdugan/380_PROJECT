@@ -7,13 +7,11 @@ from datetime import datetime as dtime
 
 from base import BaseComponent
 
-LSB_MOTOR = c_uint8(0)
-
 
 class ServoInterface(BaseComponent):
     def __init__(self, name, publisher, **kwargs):
-        startup_delay = kwargs.pop('startup_delay', 3)
         super().__init__(name, publisher)
+        startup_delay = kwargs.pop('startup_delay', 1)
         self.servo_directions = kwargs.pop('servo_directions')
         self.servo_indices = kwargs.pop('servo_indices')
         self.zero_positions = kwargs.pop('zero_positions')
@@ -23,23 +21,12 @@ class ServoInterface(BaseComponent):
     def update(self, msg):
         if msg['type'] == 'servo_status':
             angles = msg['data']['servo_angles']
-            # TODO: convert float angles (rad) to correct int outputs
             self.send_command(angles)
 
-    # def send_command(self, angles):
-    #     angles = self.format_angles(angles)
-    #     angles_bytes = bytearray(angles)
-    #     self.serial.writelines(angles_bytes)
-    #     for i in range(6):
-    #         print('Sent: ', angles[i], ' Received: ', str(self.serial.readline()))
-
     def send_command(self, angles):
-        # print('\nSending...')
         angles = self.format_angles(angles)
         for i in range(6):
             self.serial.write(c_uint8(angles[i]))
-        # for i in range(6):
-        #     print('Sent: ', angles[i], ' Received: ', str(self.serial.readline()))
 
     def format_angles(self, angles):
         formatted_angles = [0]*6
@@ -55,6 +42,7 @@ class KeyboardInterface(BaseComponent):
         super().__init__(name, publisher)
         self.master = master
 
+        # State variables
         self.x_state = 0
         self.y_state = 0
         self.z_state = 0  # should remain so, as we are neglecting axial translation for now
@@ -62,6 +50,7 @@ class KeyboardInterface(BaseComponent):
         self.pitch_state = 0
         self.yaw_state = 0  # should remain so, as we are neglecting axial rotation for now
 
+        # Update rates
         self.x_rate = kwargs['x_rate']
         self.y_rate = kwargs['y_rate']
         self.z_rate = kwargs['z_rate']
@@ -69,7 +58,9 @@ class KeyboardInterface(BaseComponent):
         self.pitch_rate = kwargs['pitch_rate']*np.pi/180
         self.yaw_rate = kwargs['yaw_rate']*np.pi/180
 
+        # Last update time
         self.prev_time = 0
+
         self.bind_handlers()
 
     def update(self, msg):
@@ -137,6 +128,8 @@ class KeyboardInterface(BaseComponent):
 class IMUInterface(BaseComponent):
     def __init__(self, name, publisher, **kwargs):
         super().__init__(name, publisher)
+
+        # Initialize serial port
         host = kwargs['host']
         port = kwargs['port']
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -144,12 +137,14 @@ class IMUInterface(BaseComponent):
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         self.socket.bind((host, port))
         self.timeout = kwargs.get('timeout', 0.5)
-        self.history = kwargs.get('history', 10)
-        self.file_prefix = kwargs.get('file_prefix', '')
-        self.min_resp = 0.5
-        self.zero_pos = None
-        self.t0 = None
 
+        self.history = kwargs.get('history', 10)  # number of values to use for filtering
+        self.min_resp = 0.5  # minimum change in angle (degrees) to register as a change in angle
+        self.zero_pos = None  # set at first call to update()
+        self.t0 = None  # set at first call to update()
+
+        # CSV output
+        self.file_prefix = kwargs.get('file_prefix', '')
         if self.file_prefix:
             ts = dtime.strftime(dtime.now(), '%Y-%m-%d_%H.%M.%S.csv')
             self.file = open(self.file_prefix + ts, 'w')
@@ -184,7 +179,7 @@ class IMUInterface(BaseComponent):
             if reading is not None:
                 readings.append(reading)
         reading = np.mean(readings, axis=0)
-        reading = np.flip(reading)
+        reading = np.flip(reading)  # read in order yaw, pitch, roll but needs to be roll, pitch, yaw
         return reading
 
     def publish_reading(self, reading):
@@ -194,8 +189,7 @@ class IMUInterface(BaseComponent):
                 reading_out.append((r - z)*np.pi/180.)
             else:
                 reading_out.append(0)
-
-        reading_out[-1] = 0
+        reading_out[-1] = 0  # explicitly set yaw to 0
         msg = {
             'sender': self.name,
             'type': 'imu_reading',
@@ -204,13 +198,9 @@ class IMUInterface(BaseComponent):
             }
         }
         self.publish(msg)
-        reading_out = [r*180/np.pi for r in reading_out]
-        # print(reading_out[:2])
         if self.file_prefix:
-            self.write(time.time() - self.t0, reading_out)
+            reading_out = [r*180/np.pi for r in reading_out]
+            self.to_csv(time.time() - self.t0, reading_out)
 
-    def write(self, time, reading):
+    def to_csv(self, time, reading):
         self.file.write('{},{},{},{}'.format(time, reading[0], reading[1], reading[2]) + '\n')
-
-    def __del__(self):
-        self.file.close()

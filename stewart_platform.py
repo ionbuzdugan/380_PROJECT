@@ -66,6 +66,6 @@ class Orchestrator(BaseComponent):
 
 
 if __name__ == '__main__':
-    conf = 'stewart_config_imu.yml'
+    conf = 'stewart_testing.yml'
     app = Orchestrator(conf)
     app.run()
