@@ -70,6 +70,15 @@ class KinematicsController(BaseComponent):
             self.update_platform(translation, orientation)
             self.publish_servo()
             self.publish_geometry()
+        elif msg['type'] == 'imu_reading':
+            roll, pitch = msg['data']['reading'][:2]
+            max_ang = 5*np.pi/180
+            orientation = [0, 0, 0]
+            orientation[0] = -np.sign(roll)*min(np.abs(roll), max_ang)
+            orientation[1] = -np.sign(pitch)*min(np.abs(pitch), max_ang)
+            self.update_platform(self.translation, orientation)
+            self.publish_servo()
+            self.publish_geometry()
 
     def publish_geometry(self):
         cranks, rods = [], []

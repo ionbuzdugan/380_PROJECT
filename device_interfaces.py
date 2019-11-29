@@ -1,6 +1,7 @@
 import time
 import numpy as np
 import serial as serial
+import socket
 from ctypes import *
 
 from base import BaseComponent
@@ -28,7 +29,8 @@ class ServoInterface(BaseComponent):
         # print([a*180/np.pi for a in angles])
         angles = self.format_angles(angles)
         angles_bytes = bytearray([0] + angles)
-        self.serial.write(angles_bytes)
+        self.serial.writelines(angles_bytes)
+        self.serial.flush()
         for i in range(6):
             print('Sent: ', angles[i], ' Received: ', str(self.serial.readline()))
 
@@ -135,3 +137,58 @@ class KeyboardInterface(BaseComponent):
             self.pitch_state = 0
         elif event.char == '\uf703':
             self.roll_state = 0
+
+
+class IMUInterface(BaseComponent):
+    def __init__(self, name, publisher, **kwargs):
+        super().__init__(name, publisher)
+        host = kwargs['host']
+        port = kwargs['port']
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        self.socket.bind((host, port))
+        self.timeout = kwargs.get('timeout', 0.5)
+        self.history = kwargs.get('history', 10)
+        self.min_resp = 2
+        self.zero_pos = None
+        self.zero()
+
+    def update(self, msg):
+        if msg['type'] == 'update':
+            reading = self.get_reading()
+            if reading is not None:
+                self.publish_reading(reading)
+
+    def zero(self):
+        reading = None
+        while reading is None:
+            reading = self.get_reading()
+        self.zero_pos = reading
+
+    def get_reading(self):
+        readings = []
+        while len(readings) < self.history:
+            t0 = time.time()
+            reading = None
+            while time.time() - t0 < self.timeout:
+                message, address = self.socket.recvfrom(8192)
+                splt = message.decode('ascii').split(',')
+                if len(splt) == 13:
+                    reading = [float(n.strip()) for n in splt[-3:]]
+                    break
+            if reading is not None:
+                readings.append(reading)
+        return np.mean(readings, axis=0)
+
+    def publish_reading(self, reading):
+        reading = [(r - z)*np.pi/180. if (r - z > self.min_resp) else 0 for r, z in zip(reading, self.zero_pos)]
+        reading[-1] = 0
+        msg = {
+            'sender': self.name,
+            'type': 'imu_reading',
+            'data': {
+                'reading': reading,
+            }
+        }
+        self.publish(msg)

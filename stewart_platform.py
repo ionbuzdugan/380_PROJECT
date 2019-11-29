@@ -5,7 +5,7 @@ from base import BaseComponent
 from publisher import Publisher
 from kinematics import KinematicsController
 from gui import GUI, SimulationFrame, GraphFrame
-from device_interfaces import KeyboardInterface, ServoInterface
+from device_interfaces import KeyboardInterface, ServoInterface, IMUInterface
 
 
 def get_config(config_file):
@@ -40,6 +40,8 @@ class Orchestrator(BaseComponent):
                     self.components[name] = KeyboardInterface(name, self.publisher, self.gui, **comp)
                 elif cls == 'servo_device_interface':
                     self.components[name] = ServoInterface(name, self.publisher, **comp)
+                elif cls == 'imu_device_interface':
+                    self.components[name] = IMUInterface(name, self.publisher, **comp)
                 else:
                     raise ValueError('Invalid component type: {}'.format(cls))
             else:
@@ -64,6 +66,6 @@ class Orchestrator(BaseComponent):
 
 
 if __name__ == '__main__':
-    conf = 'stewart_config.yml'
+    conf = 'stewart_config_imu.yml'
     app = Orchestrator(conf)
     app.run()
