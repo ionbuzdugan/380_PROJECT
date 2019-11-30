@@ -28,17 +28,18 @@ class KinematicsController(BaseComponent):
         self.servo_angles = None
         self.servo_range = (max(kwargs['servo_range'][0], MIN_ANGLE*180/np.pi),
                             max(kwargs['servo_range'][1], MAX_ANGLE*180/np.pi))
+        self.max_feedback_resp = kwargs.get('max_feedback_response', 15)  # degrees
 
         # Vector variables
         self.translation = None  # current translation
         self.orientation = None  # current orientation
         self.B = []  # base joints in base frame
         self.P = []  # platform joints in platform frame
-        self.q = []  # vector from base origin to P
-        self.l = []  # vector from B to P
-        self.H = []  # servo horn end to mount the rod
-        self.sin_beta = []  # sin of pan angle of servos in base plate
-        self.cos_beta = []  # cos of pan angle of servos in base plate
+        self.q = []  # vectors from base origin to P
+        self.l = []  # vectors from B to P
+        self.H = []  # servo crank end to mount the rod
+        self.sin_beta = []  # sine of pan angle of servos in base plate
+        self.cos_beta = []  # cosine of pan angle of servos in base plate
         for act in self.actuators:
             self.B.append(act['base_joint'])
             self.P.append(act['platform_joint'])
@@ -66,7 +67,7 @@ class KinematicsController(BaseComponent):
                     orientation.append(self.orientation[i] + msg['data']['delta_orientation'][i])
             elif msg['type'] == 'imu_reading':
                 roll, pitch = msg['data']['reading'][:2]
-                max_ang = 15*np.pi/180
+                max_ang = self.max_feedback_resp*np.pi/180
                 orientation = [0, 0, 0]
                 orientation[0] = np.sign(roll)*min(np.abs(roll), max_ang)
                 orientation[1] = -np.sign(pitch)*min(np.abs(pitch), max_ang)
@@ -112,41 +113,42 @@ class KinematicsController(BaseComponent):
             l.append([0, 0, 0])
             H.append([0, 0, 0])
 
+            # Vector from base origin to i'th base joint
             Bi = self.B[i]
 
+            # Apply rotation to vector from platform origin to i'th platform joint
             o = np.matmul(rot_matrix, np.reshape(self.P[i], (3, 1))).ravel()
 
+            # Compute vector from base origin to i'th platform joint
             q[i][0] = translation[0] + o[0]
             q[i][1] = translation[1] + o[1]
             q[i][2] = translation[2] + o[2] + self.T0[2]
 
+            # Compute vector from i'th base joint to i'th platform joint
             l[i][0] = q[i][0] - Bi[0]
             l[i][1] = q[i][1] - Bi[1]
             l[i][2] = q[i][2] - Bi[2]
 
-            gk = l[i][0]**2 + l[i][1]**2 + l[i][2]**2 - self.rod_length**2 + self.crank_length**2
-            ek = 2*self.crank_length*l[i][2]
-            fk = 2*self.crank_length*(self.cos_beta[i]*l[i][0] + self.sin_beta[i]*l[i][1])
+            # Factors from application of reduced trigonometric identity
+            gi = l[i][0]**2 + l[i][1]**2 + l[i][2]**2 - self.rod_length**2 + self.crank_length**2
+            ei = 2*self.crank_length*l[i][2]
+            fi = 2*self.crank_length*(self.cos_beta[i]*l[i][0] + self.sin_beta[i]*l[i][1])
 
-            sq_sum = ek**2 + fk**2
-
-            # Check validity of position before continuing
-            gk2_sq = gk**2/sq_sum
-            if gk2_sq > 1:
+            # Check validity of factors before continuing
+            gi2_sq = gi**2/(ei**2 + fi**2)
+            if gi2_sq > 1:
                 return
 
-            sqrt1 = np.sqrt(1 - gk2_sq)
-            sqrt2 = np.sqrt(sq_sum)
+            # Compute servo angle from factors
+            alpha = np.arcsin(np.sqrt(gi2_sq)) - np.arctan2(fi, ei)
 
-            sin_alpha = (gk*ek)/sq_sum - (fk*sqrt1)/sqrt2
-            cos_alpha = (gk*fk)/sq_sum + (ek*sqrt1)/sqrt2
-
-            H[i][0] = Bi[0] + self.crank_length*cos_alpha*self.cos_beta[i]
-            H[i][1] = Bi[1] + self.crank_length*cos_alpha*self.sin_beta[i]
-            H[i][2] = Bi[2] + self.crank_length*sin_alpha
+            # Update H values
+            H[i][0] = Bi[0] + self.crank_length*np.cos(alpha)*self.cos_beta[i]
+            H[i][1] = Bi[1] + self.crank_length*np.cos(alpha)*self.sin_beta[i]
+            H[i][2] = Bi[2] + self.crank_length*np.sin(alpha)
 
             # Check angle validity
-            servo_angles.append(np.arcsin((H[i][2] - Bi[2])/self.crank_length))
+            servo_angles.append(alpha)
             if np.isnan(servo_angles[i]) or not (self.servo_range[0] < servo_angles[i] < self.servo_range[1]):
                 return
 

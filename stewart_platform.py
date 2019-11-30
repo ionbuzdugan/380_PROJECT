@@ -49,7 +49,6 @@ class Orchestrator(BaseComponent):
             self.publisher.consumers[name] = consumers
         for name, consumers in self.publisher.consumers.items():
             self.publisher.consumers[name] = [self.components[c] for c in consumers]
-            # self.publisher.consumers[name].append(self)
         self.publisher.consumers[self.name] = [comp for comp in self.components.values()]
 
     def update(self, msg=None):
@@ -66,6 +65,6 @@ class Orchestrator(BaseComponent):
 
 
 if __name__ == '__main__':
-    conf = 'stewart_testing.yml'
+    conf = 'stewart_config_imu.yml'
     app = Orchestrator(conf)
     app.run()
